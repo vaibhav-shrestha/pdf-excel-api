@@ -1,12 +1,16 @@
+from flask import Flask, request, jsonify, send_file
+from werkzeug.utils import secure_filename
 import os
-from flask import Flask, request, send_file, jsonify
 import pdfplumber
 import pandas as pd
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+API_KEY = "vaibhav-secret-key-2983"
 
 def convert_pdf_to_excel(pdf_path, excel_path):
     all_rows = []
@@ -17,16 +21,20 @@ def convert_pdf_to_excel(pdf_path, excel_path):
                 for row in table:
                     if any(cell is not None and str(cell).strip() != "" for cell in row):
                         all_rows.append(row)
+
     if all_rows:
         df = pd.DataFrame(all_rows)
-        df.columns = all_rows[0]
+        header = all_rows[0]
+        df.columns = header
         df = df[1:]
         df.to_excel(excel_path, index=False)
-    else:
-        raise ValueError("No valid tables found in PDF.")
 
 @app.route('/api/convert', methods=['POST'])
 def api_convert():
+    key = request.headers.get("x-api-key")
+    if key != API_KEY:
+        return jsonify({"error": "Unauthorized"}), 401
+
     if 'pdf_file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
@@ -45,6 +53,7 @@ def api_convert():
 
     try:
         convert_pdf_to_excel(pdf_path, excel_path)
+
         return send_file(
             excel_path,
             as_attachment=True,
@@ -55,6 +64,4 @@ def api_convert():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
-
+    app.run(debug=True)
