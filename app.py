@@ -45,16 +45,13 @@ def api_convert():
 
     try:
         convert_pdf_to_excel(pdf_path, excel_path)
-
-        return send_file(excel_path, as_attachment=True)
-
-    return send_file(
-    excel_path,
-    as_attachment=True,
-    download_name=os.path.basename(excel_path),
-    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-)
-except Exception as e:
+        return send_file(
+            excel_path,
+            as_attachment=True,
+            download_name=os.path.basename(excel_path),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
